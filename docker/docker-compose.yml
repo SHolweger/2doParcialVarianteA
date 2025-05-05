@@ -1,0 +1,62 @@
+services:
+  oracle-db:
+    image: container-registry.oracle.com/database/express:21.3.0-xe
+    container_name: oracle-db
+    environment:
+      ORACLE_PWD: sebas123
+      ORACLE_CHARACTERSET: AL32UTF8
+    ports:
+      - "1522:1521"
+    healthcheck:
+      test: ["CMD", "lsnrctl", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    platform: linux/amd64
+
+  micro_guatemala:
+    build:
+      context: ../guatemala_oracle
+    container_name: micro_guatemala
+    ports:
+      - "5001:5001"
+    depends_on:
+      oracle-db:
+        condition: service_healthy
+    entrypoint: >
+      sh -c "sleep 120 && python app.py"
+    env_file:
+      - ../guatemala_oracle/.env
+
+#  cockroachdb:
+#    image: cockroachdb/cockroach:v23.1.11
+#    container_name: cockroachdb
+#    command: >
+#      start-single-node --insecure &&
+#      sleep 5 &&
+#      /cockroach/cockroach sql --insecure --execute="CREATE DATABASE IF NOT EXISTS tracking;"
+#    ports:
+#      - "26258:26257"
+#      - "8081:8080"
+#    volumes:
+#      - cockroach-data:/cockroach/cockroach-data
+#    healthcheck:
+#      test: ["CMD", "/cockroach/cockroach", "node", "status", "--insecure"]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 5
+
+#  microservicio_cockroach:
+#    build:
+#      context: ../microservicio_cockroach
+#    container_name: microservicio_cockroach
+#    ports:
+#      - "5002:5000"
+#    depends_on:
+#      cockroachdb:
+#        condition: service_healthy
+#    env_file:
+#      - ../microservicio_cockroach/.env
+
+volumes:
+  cockroach-data:
