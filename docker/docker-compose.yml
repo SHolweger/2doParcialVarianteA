@@ -13,7 +13,6 @@ services:
       timeout: 10s
       retries: 5
     platform: linux/amd64
-
   micro_guatemala:
     build:
       context: ../guatemala_oracle
@@ -27,36 +26,47 @@ services:
       sh -c "sleep 120 && python app.py"
     env_file:
       - ../guatemala_oracle/.env
+  mysql-replica:
+    image: mysql:8.0
+    container_name: mysql-replica
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: sebas123
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-psebas123"]
+      interval: 30s
+      timeout: 10s
+    volumes:
+      - mysql_data:/var/lib/mysql
 
-#  cockroachdb:
-#    image: cockroachdb/cockroach:v23.1.11
-#    container_name: cockroachdb
-#    command: >
-#      start-single-node --insecure &&
-#      sleep 5 &&
-#      /cockroach/cockroach sql --insecure --execute="CREATE DATABASE IF NOT EXISTS tracking;"
-#    ports:
-#      - "26258:26257"
-#      - "8081:8080"
-#    volumes:
-#      - cockroach-data:/cockroach/cockroach-data
-#    healthcheck:
-#      test: ["CMD", "/cockroach/cockroach", "node", "status", "--insecure"]
-#      interval: 10s
-#      timeout: 5s
-#      retries: 5
+  micro_mexico:
+    build:
+      context: ../mexico_mysql
+    container_name: micro_mexico
+    ports:
+      - "5002:5001"
+    depends_on:
+      - mysql-replica
+    entrypoint: >
+      sh -c "sleep 120 && python app.py"
+    env_file:
+      - ../mexico_mysql/.env
 
-#  microservicio_cockroach:
+#  micro_elsalvador:
 #    build:
-#      context: ../microservicio_cockroach
-#    container_name: microservicio_cockroach
+#      context: ../elsalvador_mysql
+#    container_name: micro_elsalvador
 #    ports:
-#      - "5002:5000"
+#      - "5003:5001"
 #    depends_on:
-#      cockroachdb:
-#        condition: service_healthy
+#      - mysql-replica
+#    entrypoint: >
+#      sh -c "sleep 120 && python app.py"
 #    env_file:
-#      - ../microservicio_cockroach/.env
+#      - ../elsalvador_mysql/.env
 
 volumes:
   cockroach-data:
+  mysql_data:

@@ -1,0 +1,35 @@
+import os
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+import dotenv
+
+dotenv.load_dotenv()
+
+# Declaración de la base para los modelos
+Base = declarative_base()
+
+# Carga de variables de entorno (asegúrate de tener un .env)
+DB_USER = os.getenv("DB_USER", "root")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "root")
+DB_HOST = os.getenv("DB_HOST", "mysql_mexico")  # nombre del contenedor MySQL
+DB_PORT = os.getenv("DB_PORT", "3306")
+DB_NAME = os.getenv("DB_NAME", "gabinete_mexico")
+
+try:
+    DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    engine = create_engine(DATABASE_URL, echo=True)
+    SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+    print("Conexión MySQL exitosa")
+except Exception as e:
+    print(f"Error al conectar con MySQL: {e}")
+    engine = None
+    SessionLocal = None
+
+# Función para obtener una sesión de base de datos
+def get_db_connection():
+    try:
+        return engine, SessionLocal, Base
+    except Exception as e:
+        print(f"Error creando la sesion de base de datos: {e}")
+        return None, None, None

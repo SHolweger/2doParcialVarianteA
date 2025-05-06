@@ -7,42 +7,48 @@ from services.audiencia_service import get_audiencias, create_audiencia, update_
 from services.incidencias_service import get_incidencias, create_incidencia, update_incidencia
 from services.asunto_procurador_service import get_asunto_procuradores, assign_procurador_to_asunto
 import os
-import oracledb
+import pymysql
 
 main_bp = Blueprint("main", __name__)
 
-@main_bp.route('/check_db', methods=['GET']) 
+@main_bp.route('/check_db', methods=['GET'])
 def check_db():
     try:
         db_host = os.getenv("DB_HOST")
-        db_port = os.getenv("DB_PORT", "1521")
-        db_service = os.getenv("DB_SERVICE")
+        db_port = int(os.getenv("DB_PORT", "3306"))
+        db_name = os.getenv("DB_NAME")
         db_user = os.getenv("DB_USER")
         db_password = os.getenv("DB_PASSWORD")
 
-        dsn = f"{db_host}:{db_port}/{db_service}"
-        connection = oracledb.connect(user=db_user, password=db_password, dsn=dsn)
+        connection = pymysql.connect(
+            host=db_host,
+            port=db_port,
+            user=db_user,
+            password=db_password,
+            database=db_name,
+            connect_timeout=5
+        )
 
-        if connection:
-            return jsonify({"message": "Conexión exitosa a Oracle"}), 200
-    except oracledb.Error as e:
-        return jsonify({"error": f"Error al conectar a Oracle: {str(e)}"}), 500
+        if connection.open:
+            return jsonify({"message": "Conexión exitosa a MySQL"}), 200
+    except pymysql.MySQLError as e:
+        return jsonify({"error": f"Error al conectar a MySQL: {str(e)}"}), 500
     finally:
-        if 'connection' in locals() and connection:
+        if 'connection' in locals() and connection.open:
             connection.close()
 
 # ---- CLIENTES ----
-@main_bp.route("/clientes", methods=["GET"]) #select
+@main_bp.route("/clientes", methods=["GET"])
 def route_get_clientes():
     SessionLocal = current_app.config["SESSION_LOCAL"]
     return get_clientes(SessionLocal)
 
-@main_bp.route("/create/cliente", methods=["POST"]) #insert
+@main_bp.route("/create/cliente", methods=["POST"])
 def route_create_cliente():
     SessionLocal = current_app.config["SESSION_LOCAL"]
     return create_cliente(request.json, SessionLocal) 
 
-@main_bp.route("/update/cliente/<int:id>", methods=["PUT"]) #update
+@main_bp.route("/update/cliente/<int:id>", methods=["PUT"])
 def route_update_cliente(id):
     SessionLocal = current_app.config["SESSION_LOCAL"]
     return update_cliente(id, request.json, SessionLocal)
