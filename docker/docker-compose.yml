@@ -28,7 +28,7 @@ services:
       - ../guatemala_oracle/.env
   mysql-replica:
     image: mysql:8.0
-    container_name: mysql-replica
+    container_name: MySQL-replica
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: sebas123
@@ -68,5 +68,5 @@ services:
 #      - ../elsalvador_mysql/.env
 
 volumes:
-  cockroach-data:
   mysql_data:
+  oracle-db-data:

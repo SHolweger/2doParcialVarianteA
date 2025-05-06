@@ -10,11 +10,11 @@ dotenv.load_dotenv()
 Base = declarative_base()
 
 # Carga de variables de entorno (asegúrate de tener un .env)
-DB_USER = os.getenv("DB_USER", "root")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "root")
-DB_HOST = os.getenv("DB_HOST", "mysql_mexico")  # nombre del contenedor MySQL
-DB_PORT = os.getenv("DB_PORT", "3306")
-DB_NAME = os.getenv("DB_NAME", "gabinete_mexico")
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_HOST = os.getenv("DB_HOST")  # nombre del contenedor MySQL
+DB_PORT = os.getenv("DB_PORT")
+DB_NAME = os.getenv("DB_NAME")
 
 try:
     DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"

@@ -19,9 +19,9 @@ try:
     DATABASE_URL = f"oracle+oracledb://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/?service_name={DB_SERVICE}"
     engine = create_engine(DATABASE_URL, echo=True)
     SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
-    print("Database connection established")
+    print("Conexion a la base de datos CENTRAL establecida correctamente.")
 except Exception as e:
-    print(f"Error connecting to the database: {e}")
+    print(f"Error conectandose a la base de datos CENTRAL: {e}")
     engine = None
     SessionLocal = None
 
@@ -30,5 +30,5 @@ def get_db_connection():
     try:
         return engine, SessionLocal, Base
     except Exception as e:
-        print(f"Error creating database session: {e}")
+        print(f"Error creando la sesión de base de datos: {e}")
         return None, None, None
