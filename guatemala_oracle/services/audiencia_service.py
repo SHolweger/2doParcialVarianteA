@@ -1,6 +1,7 @@
 from flask import jsonify
 from models import Audiencia
 from datetime import datetime
+from utils.rabbitmq_utils import publicar_evento
 
 def get_audiencias(SessionLocal):
     try:
@@ -33,7 +34,7 @@ def create_audiencia(data, SessionLocal):
         return jsonify({"error": "Todos los campos son obligatorios"}), 400
 
     try:
-        # 🔐 Validación segura de fecha
+        # Validación segura de fecha
         try:
             fecha = datetime.strptime(fecha_str, "%Y-%m-%d")
         except ValueError:
@@ -47,6 +48,16 @@ def create_audiencia(data, SessionLocal):
         )
         session.add(audiencia)
         session.commit()
+        
+        #Publicar en RabbitMQ
+        audiencia_data = {
+            "expediente_id": audiencia.expediente_id,
+            "fecha": audiencia.fecha.strftime("%Y-%m-%d") if audiencia.fecha else None,
+            "lugar": audiencia.lugar,
+            "abogado_dni": audiencia.abogado_dni
+        }
+        publicar_evento("audiencia", audiencia_data, "create")
+        
         return jsonify({
             "message": "Audiencia creada correctamente",
             "audiencia_id": audiencia.id_audiencia
@@ -82,10 +93,58 @@ def update_audiencia(id, data, SessionLocal):
             audiencia.abogado_dni = data["abogado_dni"]
 
         session.commit()
+        
+        #Publicar en RabbitMQ
+        audiencia_data = {
+            "expediente_id": audiencia.expediente_id,
+            "fecha": audiencia.fecha.strftime("%Y-%m-%d") if audiencia.fecha else None,
+            "lugar": audiencia.lugar,
+            "abogado_dni": audiencia.abogado_dni
+        }
+        publicar_evento("audiencia", audiencia_data, "update")
+        
         return jsonify({"message": "Audiencia actualizada correctamente"}), 200
     except Exception as e:
         session.rollback()
         print(f"[ERROR] update_audiencia: {e}")
+        return jsonify({"error": "Error interno del servidor"}), 500
+    finally:
+        session.close()
+
+def delete_audiencia(id, SessionLocal):
+    session = SessionLocal()
+    try:
+        audiencia = session.query(Audiencia).filter_by(id_audiencia=id).first()
+        if not audiencia:
+            return jsonify({"error": "Audiencia no encontrada"}), 404
+
+        session.delete(audiencia)
+        session.commit()
+        publicar_evento("audiencia",{"id_audiencia": id}, action="delete")
+        return jsonify({"message": "Audiencia eliminada correctamente"}), 200
+    except Exception as e:
+        session.rollback()
+        print(f"[ERROR] delete_audiencia: {e}")
+        return jsonify({"error": "Error interno del servidor"}), 500
+    finally:
+        session.close()
+
+def get_audiencia_by_id(id, SessionLocal):
+    session = SessionLocal()
+    try:
+        audiencia = session.query(Audiencia).filter_by(id_audiencia=id).first()
+        if not audiencia:
+            return jsonify({"error": "Audiencia no encontrada"}), 404
+
+        return jsonify({
+            "id_audiencia": audiencia.id_audiencia,
+            "expediente_id": audiencia.expediente_id,
+            "fecha": audiencia.fecha.strftime("%Y-%m-%d") if audiencia.fecha else None,
+            "lugar": audiencia.lugar,
+            "abogado_dni": audiencia.abogado_dni
+        })
+    except Exception as e:
+        print(f"[ERROR] get_audiencia_by_id: {e}")
         return jsonify({"error": "Error interno del servidor"}), 500
     finally:
         session.close()

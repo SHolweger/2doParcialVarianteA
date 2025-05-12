@@ -89,3 +89,40 @@ def update_audiencia(id, data, SessionLocal):
         return jsonify({"error": "Error interno del servidor"}), 500
     finally:
         session.close()
+
+def delete_audiencia(id, SessionLocal):
+    session = SessionLocal()
+    try:
+        audiencia = session.query(Audiencia).filter_by(id_audiencia=id).first()
+        if not audiencia:
+            return jsonify({"error": "Audiencia no encontrada"}), 404
+
+        session.delete(audiencia)
+        session.commit()
+        return jsonify({"message": "Audiencia eliminada correctamente"}), 200
+    except Exception as e:
+        session.rollback()
+        print(f"[ERROR] delete_audiencia: {e}")
+        return jsonify({"error": "Error interno del servidor"}), 500
+    finally:
+        session.close()
+
+def get_audiencia_by_id(id, SessionLocal):
+    session = SessionLocal()
+    try:
+        audiencia = session.query(Audiencia).filter_by(id_audiencia=id).first()
+        if not audiencia:
+            return jsonify({"error": "Audiencia no encontrada"}), 404
+
+        return jsonify({
+            "id_audiencia": audiencia.id_audiencia,
+            "expediente_id": audiencia.expediente_id,
+            "fecha": audiencia.fecha.strftime("%Y-%m-%d") if audiencia.fecha else None,
+            "lugar": audiencia.lugar,
+            "abogado_dni": audiencia.abogado_dni
+        })
+    except Exception as e:
+        print(f"[ERROR] get_audiencia_by_id: {e}")
+        return jsonify({"error": "Error interno del servidor"}), 500
+    finally:
+        session.close()

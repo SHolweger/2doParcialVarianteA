@@ -59,21 +59,21 @@ services:
     env_file:
       - ../mexico_mysql/.env
 
-#  micro_elsalvador:
-#    build:
-#      context: ../elsalvador_mysql
-#    container_name: micro_elsalvador
-#    ports:
-#      - "5003:5001"
-#    depends_on:
-#      mysql-replica:
-#        condition: service_healthy
-#      rabbitmq:
-#       condition: service_started
-#    entrypoint: >
-#      sh -c "sleep 120 && python app.py"
-#    env_file:
-#      - ../elsalvador_mysql/.env
+  micro_elsalvador:
+    build:
+      context: ../elsalvador_mysql
+    container_name: micro_elsalvador
+    ports:
+      - "5003:5001"
+    depends_on:
+      mysql-replica:
+        condition: service_healthy
+      rabbitmq:
+       condition: service_started
+    entrypoint: >
+      sh -c "sleep 120 && python app.py"
+    env_file:
+      - ../elsalvador_mysql/.env
   
   rabbitmq:
     image: rabbitmq:3-management

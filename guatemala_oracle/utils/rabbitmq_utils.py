@@ -1,14 +1,13 @@
-# rabbitmq_utils.py
+# utils/rabbitmq_utils.py
 import pika
 import json
 
-def publicar_cliente(cliente_data, action="create"):
+def publicar_evento(model, data, action):
     try:
-        # Estructuramos el mensaje correctamente
         mensaje = {
-            "model": "cliente",
+            "model": model,
             "action": action,
-            "data": cliente_data
+            "data": data
         }
 
         connection = pika.BlockingConnection(pika.ConnectionParameters(
@@ -16,14 +15,14 @@ def publicar_cliente(cliente_data, action="create"):
             credentials=pika.PlainCredentials('guest', 'sebas123')
         ))
         channel = connection.channel()
-        channel.queue_declare(queue='replicacion_clientes', durable=True)
+        channel.queue_declare(queue='replicacion_modelos', durable=True)  # nombre más general
         channel.basic_publish(
             exchange='',
-            routing_key='replicacion_clientes',
+            routing_key='replicacion_modelos',
             body=json.dumps(mensaje),
-            properties=pika.BasicProperties(delivery_mode=2)  # mensaje persistente
+            properties=pika.BasicProperties(delivery_mode=2)
         )
         connection.close()
-        print(f"[✔] Cliente publicado a RabbitMQ: {mensaje}")
+        print(f"[✔] {model.upper()} publicado a RabbitMQ: {mensaje}")
     except Exception as e:
-        print(f"[✖] Error publicando en RabbitMQ: {e}")
+        print(f"[✖] Error publicando {model} en RabbitMQ: {e}")

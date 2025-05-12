@@ -1,10 +1,10 @@
 from flask import Blueprint, request, current_app, jsonify
-from services.cliente_service import get_clientes, create_cliente, update_cliente
-from services.asunto_service import get_asuntos, create_asunto, update_asunto
-from services.procurador_service import get_procuradores, create_procurador, update_procurador
-from services.abogado_service import get_abogados, create_abogado, update_abogado
-from services.audiencia_service import get_audiencias, create_audiencia, update_audiencia
-from services.incidencias_service import get_incidencias, create_incidencia, update_incidencia
+from services.cliente_service import get_clientes, create_cliente, update_cliente, delete_cliente, get_cliente_by_id
+from services.asunto_service import get_asuntos, create_asunto, update_asunto, delete_asunto, get_asunto_by_id
+from services.procurador_service import get_procuradores, create_procurador, update_procurador, delete_procurador, get_procurador_by_id
+from services.abogado_service import get_abogados, create_abogado, update_abogado, delete_abogado, get_abogado_by_dni
+from services.audiencia_service import get_audiencias, create_audiencia, update_audiencia, delete_audiencia, get_audiencia_by_id
+from services.incidencias_service import get_incidencias, create_incidencia, update_incidencia, delete_incidencia, get_incidencia_by_id
 from services.asunto_procurador_service import get_asunto_procuradores, assign_procurador_to_asunto
 import os
 import pymysql
@@ -30,44 +30,64 @@ def check_db():
         )
 
         if connection.open:
-            return jsonify({"message": "Conexión exitosa a MySQL"}), 200
+            return jsonify({"message": "Conexión exitosa a Sucursal MySQL El Salvador"}), 200
     except pymysql.MySQLError as e:
-        return jsonify({"error": f"Error al conectar a MySQL: {str(e)}"}), 500
+        return jsonify({"error": f"Error al conectar a Sucursal MySQL El Salvador: {str(e)}"}), 500
     finally:
         if 'connection' in locals() and connection.open:
             connection.close()
 
 # ---- CLIENTES ----
-@main_bp.route("/clientes", methods=["GET"])
+@main_bp.route("/clientes", methods=["GET"]) #select
 def route_get_clientes():
     SessionLocal = current_app.config["SESSION_LOCAL"]
     return get_clientes(SessionLocal)
 
-@main_bp.route("/create/cliente", methods=["POST"])
+@main_bp.route("/create/cliente", methods=["POST"]) #insert
 def route_create_cliente():
     SessionLocal = current_app.config["SESSION_LOCAL"]
     return create_cliente(request.json, SessionLocal) 
 
-@main_bp.route("/update/cliente/<int:id>", methods=["PUT"])
+@main_bp.route("/update/cliente/<int:id>", methods=["PUT"]) #update
 def route_update_cliente(id):
     SessionLocal = current_app.config["SESSION_LOCAL"]
     return update_cliente(id, request.json, SessionLocal)
 
+@main_bp.route(("/delete/cliente/<int:id>"), methods=["DELETE"]) #delete
+def route_delete_cliente(id):
+    SessionLocal = current_app.config["SESSION_LOCAL"]
+    return delete_cliente(id, SessionLocal)
+
+@main_bp.route("/get/cliente/<int:id>", methods=["GET"]) #get by id
+def route_get_cliente(id):
+    SessionLocal = current_app.config["SESSION_LOCAL"]
+    return get_cliente_by_id(id, SessionLocal)
+
 # ---- ASUNTOS ----
-@main_bp.route("/asuntos", methods=["GET"])
+@main_bp.route("/asuntos", methods=["GET"]) #select
 def route_get_asuntos():
     SessionLocal = current_app.config["SESSION_LOCAL"]
     return get_asuntos(SessionLocal)
 
-@main_bp.route("/create/asunto", methods=["POST"])
+@main_bp.route("/create/asunto", methods=["POST"]) #insert
 def route_create_asunto():
     SessionLocal = current_app.config["SESSION_LOCAL"]
     return create_asunto(request.json, SessionLocal)
 
-@main_bp.route("/update/asunto/<int:id>", methods=["PUT"])
+@main_bp.route("/update/asunto/<int:id>", methods=["PUT"]) #update
 def route_update_asunto(id):
     SessionLocal = current_app.config["SESSION_LOCAL"]
     return update_asunto(id, request.json, SessionLocal)
+
+@main_bp.route(("/delete/asunto/<int:id>"), methods=["DELETE"]) #delete
+def route_delete_asunto(id):
+    SessionLocal = current_app.config["SESSION_LOCAL"]
+    return delete_asunto(id, SessionLocal)
+
+@main_bp.route("/get/asunto/<int:id>", methods=["GET"]) #get by id
+def route_get_asunto(id):
+    SessionLocal = current_app.config["SESSION_LOCAL"]
+    return get_asunto_by_id(id, SessionLocal)
 
 # ---- PROCURADORES ----
 @main_bp.route("/procuradores", methods=["GET"])
@@ -85,6 +105,16 @@ def route_update_procurador(id):
     SessionLocal = current_app.config["SESSION_LOCAL"]
     return update_procurador(id, request.json, SessionLocal)
 
+@main_bp.route("/delete/procurador/<int:id>", methods=["DELETE"])
+def route_delete_procurador(id):
+    SessionLocal = current_app.config["SESSION_LOCAL"]
+    return delete_procurador(id, SessionLocal)
+
+@main_bp.route("/get/procurador/<int:id>", methods=["GET"])
+def route_get_procurador(id):
+    SessionLocal = current_app.config["SESSION_LOCAL"]
+    return get_procurador_by_id(id, SessionLocal)
+
 # ---- ABOGADOS ----
 @main_bp.route("/abogados", methods=["GET"])
 def route_get_abogados():
@@ -100,6 +130,16 @@ def route_create_abogado():
 def route_update_abogado(dni):
     SessionLocal = current_app.config["SESSION_LOCAL"]
     return update_abogado(dni, request.json, SessionLocal)
+
+@main_bp.route("/delete/abogado/<string:dni>", methods=["DELETE"])
+def route_delete_abogado(dni):
+    SessionLocal = current_app.config["SESSION_LOCAL"]
+    return delete_abogado(dni, SessionLocal)
+
+@main_bp.route("/get/abogado/<string:dni>", methods=["GET"])
+def route_get_abogado(dni):
+    SessionLocal = current_app.config["SESSION_LOCAL"]
+    return get_abogado_by_dni(dni, SessionLocal)
 
 # ---- AUDIENCIAS ----
 @main_bp.route("/audiencias", methods=["GET"])
@@ -117,6 +157,16 @@ def route_update_audiencia(id):
     SessionLocal = current_app.config["SESSION_LOCAL"]
     return update_audiencia(id, request.json, SessionLocal)
 
+@main_bp.route("/delete/audiencia/<int:id>", methods=["DELETE"])
+def route_delete_audiencia(id):
+    SessionLocal = current_app.config["SESSION_LOCAL"]
+    return delete_audiencia(id, SessionLocal)
+
+@main_bp.route("/get/audiencia/<int:id>", methods=["GET"])
+def route_get_audiencia(id):
+    SessionLocal = current_app.config["SESSION_LOCAL"]
+    return get_audiencia_by_id(id, SessionLocal)
+
 # ---- INCIDENCIAS ----
 @main_bp.route("/incidencias", methods=["GET"])
 def route_get_incidencias():
@@ -132,6 +182,16 @@ def route_create_incidencia():
 def route_update_incidencia(id):
     SessionLocal = current_app.config["SESSION_LOCAL"]
     return update_incidencia(id, request.json, SessionLocal)
+
+@main_bp.route("/delete/incidencia/<int:id>", methods=["DELETE"])
+def route_delete_incidencia(id):
+    SessionLocal = current_app.config["SESSION_LOCAL"]
+    return delete_incidencia(id, SessionLocal)
+
+@main_bp.route("/get/incidencia/<int:id>", methods=["GET"])
+def route_get_incidencia(id):
+    SessionLocal = current_app.config["SESSION_LOCAL"]
+    return get_incidencia_by_id(id, SessionLocal)
 
 # ---- ASUNTO PROCURADOR (Relación M:N) ----
 @main_bp.route("/asunto_procuradores", methods=["GET"])

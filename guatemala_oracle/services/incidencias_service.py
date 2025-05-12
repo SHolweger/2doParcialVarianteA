@@ -1,6 +1,7 @@
 from flask import jsonify
 from models import Incidencia
 from datetime import datetime
+from utils.rabbitmq_utils import publicar_evento
 
 def get_incidencias(SessionLocal):
     try:
@@ -40,6 +41,14 @@ def create_incidencia(data, SessionLocal):
         )
         session.add(incidencia)
         session.commit()
+        #Publicar en RabbitMQ
+        incidencia_data = {
+            "id_audiencia":incidencia.id_audiencia,
+            "descripcion": incidencia.descripcion,
+            "tipo": incidencia.tipo,
+            "fecha": incidencia.fecha
+        }
+        publicar_evento("incidencia",incidencia_data,action="create")
         return jsonify({"message": "Incidencia creada correctamente", "status": 201})
     except Exception as e:
         session.rollback()
@@ -63,9 +72,57 @@ def update_incidencia(id, data, SessionLocal):
             incidencia.fecha = datetime.strptime(data.get("fecha"), "%Y-%m-%d")
 
         session.commit()
+
+        #Publicar en RabbitMQ
+        incidencia_data = {
+            "id_audiencia":incidencia.id_audiencia,
+            "descripcion": incidencia.descripcion,
+            "tipo": incidencia.tipo,
+            "fecha": incidencia.fecha
+        }
+        publicar_evento("incidencia",incidencia_data,action="update")        
+        
         return jsonify({"message": "Incidencia actualizada correctamente", "status": 200})
     except Exception as e:
         session.rollback()
+        print(e)
+        return jsonify({"error": "Error interno del servidor"}), 500
+    finally:
+        session.close()
+def delete_incidencia(id, SessionLocal):
+    session = SessionLocal()
+    incidencia = session.query(Incidencia).filter_by(id_incidencia=id).first()
+    if not incidencia:
+        return jsonify({"error": "Incidencia no encontrada", "status": 404})
+
+    try:
+        session.delete(incidencia)
+        session.commit()
+        #Publicar eliminación en RabbitMQ
+        publicar_evento("indidencia",{"id_incidencia": id}, action="delete")
+        return jsonify({"message": "Incidencia eliminada correctamente", "status": 200})
+    except Exception as e:
+        session.rollback()
+        print(e)
+        return jsonify({"error": "Error interno del servidor"}), 500
+    finally:
+        session.close()
+
+def get_incidencia_by_id(id, SessionLocal): 
+    session = SessionLocal()
+    incidencia = session.query(Incidencia).filter_by(id_incidencia=id).first()
+    if not incidencia:
+        return jsonify({"error": "Incidencia no encontrada", "status": 404})
+
+    try:
+        return jsonify({
+            "id": incidencia.id_incidencia,
+            "id_audiencia": incidencia.id_audiencia,
+            "descripcion": incidencia.descripcion,
+            "tipo": incidencia.tipo,
+            "fecha": incidencia.fecha.strftime("%Y-%m-%d")
+        })
+    except Exception as e:
         print(e)
         return jsonify({"error": "Error interno del servidor"}), 500
     finally:

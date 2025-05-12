@@ -1,6 +1,6 @@
 from flask import jsonify
 from models import Cliente
-from utils.rabbitmq_utils import publicar_cliente
+from utils.rabbitmq_utils import publicar_evento
 
 def get_clientes(SessionLocal):
     try:
@@ -53,8 +53,7 @@ def create_cliente(data, SessionLocal):
                 "direccion": cliente.direccion,
                 "email": cliente.email
         }
-        publicar_cliente(cliente_data)  # Llamamos a la función que publica el mensaje
-        #publicar_cliente(cliente_data,action="create")  # Llamamos a la función que publica el mensaje
+        publicar_evento("clientes",cliente_data,action="create")  # Llamamos a la función que publica el mensaje
         return jsonify({"message": "Cliente creado correctamente", "status": 201})
     except Exception as e:
         session.rollback()
@@ -82,14 +81,14 @@ def update_cliente(id, data, SessionLocal):
 
         # Publicar evento en RabbitMQ
         event_data = {
-            "id_cliente": cliente.id_cliente,
-            "nombre": cliente.nombre,
-            "apellido": cliente.apellido,
+            #"id_cliente": cliente.id_cliente,
+            #"nombre": cliente.nombre,
+            #"apellido": cliente.apellido,
             "telefono": cliente.telefono,
             "direccion": cliente.direccion,
             "email": cliente.email
         }
-        publicar_cliente(event_data, action="update")
+        publicar_evento("clientes",event_data, action="update")
 
         return jsonify({"message": "Cliente actualizado correctamente", "status": 200})
     except Exception as e:
@@ -109,7 +108,7 @@ def delete_cliente(id, SessionLocal):
         session.delete(cliente)
         session.commit()
         # Publicar evento de eliminación
-        publicar_cliente({"id_cliente": id}, action="delete")
+        publicar_evento("clientes",{"id_cliente": id}, action="delete")
         return jsonify({"message": "Cliente eliminado correctamente", "status": 200})
     except Exception as e:
         session.rollback()

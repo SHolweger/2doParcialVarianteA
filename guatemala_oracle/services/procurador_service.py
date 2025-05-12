@@ -1,5 +1,6 @@
 from flask import jsonify
 from models import Procurador
+from utils.rabbitmq_utils import publicar_evento
 
 def get_procuradores(SessionLocal):
     try:
@@ -38,6 +39,14 @@ def create_procurador(data, SessionLocal):
         )
         session.add(procurador)
         session.commit()
+        #Publicar en RabbitMQ
+        procurador_data = {
+            "nombre":procurador.nombre,
+            "apellido":procurador.apellido,
+            "telefono":procurador.telefono,
+            "email":procurador.email
+        }
+        publicar_evento("procurador",procurador_data,action="create")
         return jsonify({"message": "Procurador creado correctamente", "status": 201})
     except Exception as e:
         session.rollback()
@@ -59,9 +68,58 @@ def update_procurador(id, data, SessionLocal):
             procurador.email = data.get("email")
 
         session.commit()
+        
+        #Publicar en RabbitMQ
+        procurador_data = {
+            "nombre":procurador.nombre,
+            "apellido":procurador.apellido,
+            "telefono":procurador.telefono,
+            "email":procurador.email
+        }
+        publicar_evento("procurador",procurador_data,action="update")
+        
         return jsonify({"message": "Procurador actualizado correctamente", "status": 200})
     except Exception as e:
         session.rollback()
+        print(e)
+        return jsonify({"error": "Error interno del servidor"}), 500
+    finally:
+        session.close()
+        
+def delete_procurador(id, SessionLocal):
+    session = SessionLocal()
+    procurador = session.query(Procurador).filter_by(id_procurador=id).first()
+    if not procurador:
+        return jsonify({"error": "Procurador no encontrado", "status": 404})
+
+    try:
+        session.delete(procurador)
+        session.commit()
+        #Publicar eliminacion en RabbitMQ
+        publicar_evento("procurador",{"id_procurador":id}, action="delete")
+        return jsonify({"message": "Procurador eliminado correctamente", "status": 200})
+    except Exception as e:
+        session.rollback()
+        print(e)
+        return jsonify({"error": "Error interno del servidor"}), 500
+    finally:
+        session.close()
+
+def get_procurador_by_id(id, SessionLocal):
+    session = SessionLocal()
+    procurador = session.query(Procurador).filter_by(id_procurador=id).first()
+    if not procurador:
+        return jsonify({"error": "Procurador no encontrado", "status": 404})
+
+    try:
+        return jsonify({
+            "id": procurador.id_procurador,
+            "nombre": procurador.nombre,
+            "apellido": procurador.apellido,
+            "telefono": procurador.telefono,
+            "email": procurador.email
+        })
+    except Exception as e:
         print(e)
         return jsonify({"error": "Error interno del servidor"}), 500
     finally:

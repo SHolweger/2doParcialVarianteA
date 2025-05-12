@@ -87,3 +87,40 @@ def update_asunto(id, data, SessionLocal):
         return jsonify({"error": "Error interno del servidor"}), 500
     finally:
         session.close()
+
+def delete_asunto(id, SessionLocal):
+    session = SessionLocal()
+    asunto = session.query(Asunto).filter_by(expediente_id=id).first()
+    if not asunto:
+        return jsonify({"error": "Asunto no encontrado", "status": 404})
+
+    try:
+        session.delete(asunto)
+        session.commit()
+        return jsonify({"message": "Asunto eliminado correctamente", "status": 200})
+    except Exception as e:
+        session.rollback()
+        print(e)
+        return jsonify({"error": "Error interno del servidor"}), 500
+    finally:
+        session.close()
+
+def get_asunto_by_id(id, SessionLocal):
+    session = SessionLocal()
+    asunto = session.query(Asunto).filter_by(expediente_id=id).first()
+    if not asunto:
+        return jsonify({"error": "Asunto no encontrado", "status": 404})
+    
+    try:
+        return jsonify({
+            "expediente_id": asunto.expediente_id,
+            "id_cliente": asunto.id_cliente,
+            "fecha_inicio": asunto.fecha_inicio.strftime("%Y-%m-%d"),
+            "fecha_fin": asunto.fecha_fin.strftime("%Y-%m-%d") if asunto.fecha_fin else None,
+            "estado": asunto.estado
+        })
+    except Exception as e:
+        print(e)
+        return jsonify({"error": "Error interno del servidor"}), 500
+    finally:
+        session.close()

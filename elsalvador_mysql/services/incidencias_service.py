@@ -70,3 +70,40 @@ def update_incidencia(id, data, SessionLocal):
         return jsonify({"error": "Error interno del servidor"}), 500
     finally:
         session.close()
+
+def delete_incidencia(id, SessionLocal):
+    session = SessionLocal()
+    incidencia = session.query(Incidencia).filter_by(id_incidencia=id).first()
+    if not incidencia:
+        return jsonify({"error": "Incidencia no encontrada", "status": 404})
+
+    try:
+        session.delete(incidencia)
+        session.commit()
+        return jsonify({"message": "Incidencia eliminada correctamente", "status": 200})
+    except Exception as e:
+        session.rollback()
+        print(e)
+        return jsonify({"error": "Error interno del servidor"}), 500
+    finally:
+        session.close()
+
+def get_incidencia_by_id(id, SessionLocal): 
+    session = SessionLocal()
+    incidencia = session.query(Incidencia).filter_by(id_incidencia=id).first()
+    if not incidencia:
+        return jsonify({"error": "Incidencia no encontrada", "status": 404})
+
+    try:
+        return jsonify({
+            "id": incidencia.id_incidencia,
+            "id_audiencia": incidencia.id_audiencia,
+            "descripcion": incidencia.descripcion,
+            "tipo": incidencia.tipo,
+            "fecha": incidencia.fecha.strftime("%Y-%m-%d")
+        })
+    except Exception as e:
+        print(e)
+        return jsonify({"error": "Error interno del servidor"}), 500
+    finally:
+        session.close()

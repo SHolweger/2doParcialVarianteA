@@ -13,7 +13,7 @@ asunto_procurador = Table(
 class Cliente(Base):
     __tablename__ = "clientes"
 
-    id_cliente = Column(Integer, primary_key=True, autoincrement=True)
+    id_cliente = Column(Integer, primary_key=True, autoincrement=False)
     nombre = Column(String(100), nullable=False)
     apellido = Column(String(100), nullable=False)
     telefono = Column(String(20), nullable=False)

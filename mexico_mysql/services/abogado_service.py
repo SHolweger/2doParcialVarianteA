@@ -63,3 +63,38 @@ def update_abogado(dni, data, SessionLocal):
         return jsonify({"error": "Error interno del servidor"}), 500
     finally:
         session.close()
+
+def delete_abogado(dni, SessionLocal):
+    session = SessionLocal()
+    abogado = session.query(Abogado).filter_by(dni=dni).first()
+    if not abogado:
+        return jsonify({"error": "Abogado no encontrado", "status": 404})
+
+    try:
+        session.delete(abogado)
+        session.commit()
+        return jsonify({"message": "Abogado eliminado correctamente", "status": 200})
+    except Exception as e:
+        session.rollback()
+        print(e)
+        return jsonify({"error": "Error interno del servidor"}), 500
+    finally:
+        session.close()
+def get_abogado_by_dni(dni, SessionLocal):
+    session = SessionLocal()
+    abogado = session.query(Abogado).filter_by(dni=dni).first()
+    if not abogado:
+        return jsonify({"error": "Abogado no encontrado", "status": 404})
+
+    try:
+        return jsonify({
+            "dni": abogado.dni,
+            "nombre": abogado.nombre,
+            "apellido": abogado.apellido,
+            "pais": abogado.pais
+        })
+    except Exception as e:
+        print(e)
+        return jsonify({"error": "Error interno del servidor"}), 500
+    finally:
+        session.close()

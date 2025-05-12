@@ -1,6 +1,7 @@
 from flask import jsonify
 from models import Asunto
 from datetime import datetime
+from utils.rabbitmq_utils import publicar_evento
 
 def get_asuntos(SessionLocal):
     try:
@@ -53,6 +54,15 @@ def create_asunto(data, SessionLocal):
         )
         session.add(asunto)
         session.commit()
+        
+        #pubicar en RabbitMQ
+        asunto_data = {
+            "id_cliente": asunto.id_cliente,
+            "fecha_inicio": asunto.fecha_inicio,
+            "fecha_fin": asunto.fecha_fin,
+            "estado": asunto.estado
+        }
+        publicar_evento(asunto_data,action="create")
 
         return jsonify({"message": "Asunto creado correctamente", "status": 201})
 
@@ -79,10 +89,57 @@ def update_asunto(id, data, SessionLocal):
                 return jsonify({"error": "Formato de fecha no válido. Use el formato YYYY-MM-DD"}), 400
 
         session.commit()
+        #Publicar en RabbitMQ
+        asunto_data = {
+            "id_cliente": asunto.id_cliente,
+            "fecha_inicio": asunto.fecha_inicio,
+            "fecha_fin": asunto.fecha_fin,
+            "estado": asunto.estado
+        }
+        publicar_evento(asunto_data,action="update")        
+
         return jsonify({"message": "Asunto actualizado correctamente", "status": 200})
 
     except Exception as e:
         session.rollback()
+        print(e)
+        return jsonify({"error": "Error interno del servidor"}), 500
+    finally:
+        session.close()
+
+def delete_asunto(id, SessionLocal):
+    session = SessionLocal()
+    asunto = session.query(Asunto).filter_by(expediente_id=id).first()
+    if not asunto:
+        return jsonify({"error": "Asunto no encontrado", "status": 404})
+
+    try:
+        session.delete(asunto)
+        session.commit()
+        publicar_evento({"id_cliente": id}, action="delete")
+        return jsonify({"message": "Asunto eliminado correctamente", "status": 200})
+    except Exception as e:
+        session.rollback()
+        print(e)
+        return jsonify({"error": "Error interno del servidor"}), 500
+    finally:
+        session.close()
+
+def get_asunto_by_id(id, SessionLocal):
+    session = SessionLocal()
+    asunto = session.query(Asunto).filter_by(expediente_id=id).first()
+    if not asunto:
+        return jsonify({"error": "Asunto no encontrado", "status": 404})
+    
+    try:
+        return jsonify({
+            "expediente_id": asunto.expediente_id,
+            "id_cliente": asunto.id_cliente,
+            "fecha_inicio": asunto.fecha_inicio.strftime("%Y-%m-%d"),
+            "fecha_fin": asunto.fecha_fin.strftime("%Y-%m-%d") if asunto.fecha_fin else None,
+            "estado": asunto.estado
+        })
+    except Exception as e:
         print(e)
         return jsonify({"error": "Error interno del servidor"}), 500
     finally:
