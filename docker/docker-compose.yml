@@ -22,6 +22,8 @@ services:
     depends_on:
       oracle-db:
         condition: service_healthy
+      rabbitmq:
+       condition: service_started
     entrypoint: >
       sh -c "sleep 120 && python app.py"
     env_file:
@@ -48,7 +50,10 @@ services:
     ports:
       - "5002:5001"
     depends_on:
-      - mysql-replica
+      mysql-replica:
+        condition: service_healthy
+      rabbitmq:
+       condition: service_started
     entrypoint: >
       sh -c "sleep 120 && python app.py"
     env_file:
@@ -61,12 +66,28 @@ services:
 #    ports:
 #      - "5003:5001"
 #    depends_on:
-#      - mysql-replica
+#      mysql-replica:
+#        condition: service_healthy
+#      rabbitmq:
+#       condition: service_started
 #    entrypoint: >
 #      sh -c "sleep 120 && python app.py"
 #    env_file:
 #      - ../elsalvador_mysql/.env
+  
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"  # UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: sebas123
 
 volumes:
   mysql_data:
   oracle-db-data:
+
+networks:
+  default:
+    name: backend

@@ -12,7 +12,7 @@ asunto_procurador = Table(
 )
 
 class Cliente(Base):
-    __tablename__ = "clientes"
+    __tablename__ = "clientes"  # Nombre de la tabla en Oracle
 
     id_cliente = Column(Integer, primary_key=True)
     nombre = Column(String(100), nullable=False)

@@ -1,5 +1,5 @@
 from flask import Blueprint, request, current_app, jsonify
-from services.cliente_service import get_clientes, create_cliente, update_cliente
+from services.cliente_service import get_clientes, create_cliente, update_cliente, delete_cliente, get_cliente_by_id
 from services.asunto_service import get_asuntos, create_asunto, update_asunto
 from services.procurador_service import get_procuradores, create_procurador, update_procurador
 from services.abogado_service import get_abogados, create_abogado, update_abogado
@@ -46,6 +46,16 @@ def route_create_cliente():
 def route_update_cliente(id):
     SessionLocal = current_app.config["SESSION_LOCAL"]
     return update_cliente(id, request.json, SessionLocal)
+
+@main_bp.route(("/delete/cliente/<int:id>"), methods=["DELETE"]) #delete
+def route_delete_cliente(id):
+    SessionLocal = current_app.config["SESSION_LOCAL"]
+    return delete_cliente(id, SessionLocal)
+
+@main_bp.route("/get/cliente/<int:id>", methods=["GET"]) #get
+def route_get_cliente(id):
+    SessionLocal = current_app.config["SESSION_LOCAL"]
+    return get_cliente_by_id(id, SessionLocal)
 
 # ---- ASUNTOS ----
 @main_bp.route("/asuntos", methods=["GET"])

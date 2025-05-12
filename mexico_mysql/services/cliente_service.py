@@ -58,15 +58,15 @@ def update_cliente(id, data, SessionLocal):
         return jsonify({"error": "Cliente no encontrado", "status": 404})
 
     # Campos que pueden actualizarse
-    #nombre = data.get("nombre")
-    #apellido = data.get("apellido")
+    nombre = data.get("nombre")
+    apellido = data.get("apellido")
     telefono = data.get("telefono")
     direccion = data.get("direccion")
     email = data.get("email")
 
     try:
-     #   if nombre: cliente.nombre = nombre
-     #  if apellido: cliente.apellido = apellido
+        if nombre: cliente.nombre = nombre
+        if apellido: cliente.apellido = apellido
         if telefono: cliente.telefono = telefono
         if direccion: cliente.direccion = direccion
         if email: cliente.email = email
@@ -79,3 +79,35 @@ def update_cliente(id, data, SessionLocal):
         return jsonify({"error": "Error interno del servidor"}), 500
     finally:
         session.close()
+
+def delete_cliente(id, SessionLocal):
+    session = SessionLocal()
+    cliente = session.query(Cliente).filter_by(id_cliente=id).first()
+    if not cliente:
+        return jsonify({"error": "Cliente no encontrado", "status": 404})
+
+    try:
+        session.delete(cliente)
+        session.commit()
+        return jsonify({"message": "Cliente eliminado correctamente", "status": 200})
+    except Exception as e:
+        session.rollback()
+        print(e)
+        return jsonify({"error": "Error interno del servidor"}), 500
+    finally:
+        session.close()
+
+def get_cliente_by_id(id, SessionLocal):
+    session = SessionLocal()
+    cliente = session.query(Cliente).filter_by(id_cliente=id).first()
+    if not cliente:
+        return jsonify({"error": "Cliente no encontrado", "status": 404})
+
+    return jsonify({
+        "id": cliente.id_cliente,
+        "nombre": cliente.nombre,
+        "apellido": cliente.apellido,
+        "telefono": cliente.telefono,
+        "direccion": cliente.direccion,
+        "email": cliente.email
+    })

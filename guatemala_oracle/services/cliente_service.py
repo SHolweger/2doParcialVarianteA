@@ -1,6 +1,6 @@
-# clientes_service.py
 from flask import jsonify
 from models import Cliente
+from utils.rabbitmq_utils import publicar_cliente
 
 def get_clientes(SessionLocal):
     try:
@@ -43,6 +43,18 @@ def create_cliente(data, SessionLocal):
         )
         session.add(cliente)
         session.commit()
+
+        # Publicamos en RabbitMQ
+        cliente_data = {
+                "id_cliente": cliente.id_cliente,  # Incluimos el id_cliente generado
+                "nombre": cliente.nombre,
+                "apellido": cliente.apellido,
+                "telefono": cliente.telefono,
+                "direccion": cliente.direccion,
+                "email": cliente.email
+        }
+        publicar_cliente(cliente_data)  # Llamamos a la función que publica el mensaje
+        #publicar_cliente(cliente_data,action="create")  # Llamamos a la función que publica el mensaje
         return jsonify({"message": "Cliente creado correctamente", "status": 201})
     except Exception as e:
         session.rollback()
@@ -55,23 +67,30 @@ def update_cliente(id, data, SessionLocal):
     session = SessionLocal()
     cliente = session.query(Cliente).filter_by(id_cliente=id).first()
     if not cliente:
-        return jsonify({"error": "Cliente no encontrado", "status": 404})
+        return jsonify({"error": "Cliente no encontrado"}), 404
 
-    # Campos que pueden actualizarse
-    #nombre = data.get("nombre")
-    #apellido = data.get("apellido")
     telefono = data.get("telefono")
     direccion = data.get("direccion")
     email = data.get("email")
 
     try:
-     #   if nombre: cliente.nombre = nombre
-     #  if apellido: cliente.apellido = apellido
         if telefono: cliente.telefono = telefono
         if direccion: cliente.direccion = direccion
         if email: cliente.email = email
 
         session.commit()
+
+        # Publicar evento en RabbitMQ
+        event_data = {
+            "id_cliente": cliente.id_cliente,
+            "nombre": cliente.nombre,
+            "apellido": cliente.apellido,
+            "telefono": cliente.telefono,
+            "direccion": cliente.direccion,
+            "email": cliente.email
+        }
+        publicar_cliente(event_data, action="update")
+
         return jsonify({"message": "Cliente actualizado correctamente", "status": 200})
     except Exception as e:
         session.rollback()
@@ -79,3 +98,37 @@ def update_cliente(id, data, SessionLocal):
         return jsonify({"error": "Error interno del servidor"}), 500
     finally:
         session.close()
+
+def delete_cliente(id, SessionLocal):
+    session = SessionLocal()
+    cliente = session.query(Cliente).filter_by(id_cliente=id).first()
+    if not cliente:
+        return jsonify({"error": "Cliente no encontrado", "status": 404})
+
+    try:
+        session.delete(cliente)
+        session.commit()
+        # Publicar evento de eliminación
+        publicar_cliente({"id_cliente": id}, action="delete")
+        return jsonify({"message": "Cliente eliminado correctamente", "status": 200})
+    except Exception as e:
+        session.rollback()
+        print(e)
+        return jsonify({"error": "Error interno del servidor"}), 500
+    finally:
+        session.close()
+
+def get_cliente_by_id(id, SessionLocal):
+    session = SessionLocal()
+    cliente = session.query(Cliente).filter_by(id_cliente=id).first()
+    if not cliente:
+        return jsonify({"error": "Cliente no encontrado", "status": 404})
+
+    return jsonify({
+        "id": cliente.id_cliente,
+        "nombre": cliente.nombre,
+        "apellido": cliente.apellido,
+        "telefono": cliente.telefono,
+        "direccion": cliente.direccion,
+        "email": cliente.email
+    })

@@ -2,6 +2,8 @@ from flask import Flask
 from routes import main_routes
 from config.config import get_db_connection, Base
 from models import *
+import threading
+from replication.rabbitmq_consumer import iniciar_consumidor
 
 app = Flask(__name__)
 
@@ -13,7 +15,14 @@ if engine:
     app.config["SESSION_LOCAL"] = SessionLocal  
 else:
     print("No se pudo conectar a la base de datos. Verifica tu archivo .env.")
+    
+# Iniciar consumidor en un hilo aparte
+def run_consumidor():
+    print("[*] Iniciando consumidor de RabbitMQ...")
+    iniciar_consumidor()
 
+thread = threading.Thread(target=run_consumidor)
+thread.start()
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5001, host="0.0.0.0") 
+    app.run(debug=False, port=5001, host="0.0.0.0") 
