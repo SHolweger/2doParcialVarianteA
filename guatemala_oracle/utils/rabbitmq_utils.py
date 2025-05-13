@@ -15,14 +15,16 @@ def publicar_evento(model, data, action):
             credentials=pika.PlainCredentials('guest', 'sebas123')
         ))
         channel = connection.channel()
-        channel.queue_declare(queue='replicacion_modelos', durable=True)  # nombre más general
+        # Declarar el exchange tipo fanout
+        channel.exchange_declare(exchange='replicacion_fanout', exchange_type='fanout', durable=True)
+        # Publicar al exchange, no a una cola específica
         channel.basic_publish(
-            exchange='',
-            routing_key='replicacion_modelos',
+            exchange='replicacion_fanout',
+            routing_key='',
             body=json.dumps(mensaje),
             properties=pika.BasicProperties(delivery_mode=2)
         )
         connection.close()
-        print(f"[✔] {model.upper()} publicado a RabbitMQ: {mensaje}")
+        print(f"[✔] {model.upper()} publicado a RabbitMQ (fanout): {mensaje}")
     except Exception as e:
         print(f"[✖] Error publicando {model} en RabbitMQ: {e}")

@@ -90,10 +90,18 @@ def iniciar_consumidor():
         print("[DEBUG] Conexión a RabbitMQ exitosa.")
         channel = connection.channel()
         print("[DEBUG] Canal creado.")
-        channel.queue_declare(queue='replicacion_modelos', durable=True)
-        print("[DEBUG] Cola declarada.")
+
+        # Declarar el exchange tipo fanout
+        channel.exchange_declare(exchange='replicacion_fanout', exchange_type='fanout', durable=True)
+        # Declarar una cola única para esta sucursal (puedes personalizar el nombre)
+        queue_name = 'replicacion_mexico'
+        channel.queue_declare(queue=queue_name, durable=True)
+        # Enlazar la cola al exchange fanout
+        channel.queue_bind(exchange='replicacion_fanout', queue=queue_name)
+
+        print("[DEBUG] Cola y binding declarados.")
         print("[*] Esperando mensajes. Para salir presiona CTRL+C")
-        channel.basic_consume(queue='replicacion_modelos', on_message_callback=callback, auto_ack=True)
+        channel.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=True)
         print("[DEBUG] Consumidor registrado.")
         channel.start_consuming()
         print("[!] El consumidor dejó de consumir (start_consuming terminó)")
